@@ -2,7 +2,6 @@ import cv2
 import glob
 import numpy as np
 import copy
-<<<<<<< HEAD
 
 # function for gamma correction of images
 def gammaCorrection(images):
@@ -38,8 +37,7 @@ def mEstimator(delp, image, tmp):
     L = residual*np.sqrt(Lroot)
 
 
-=======
->>>>>>> 6ad7e6537ac5896ef8634f0861291348c29a8e37
+
 
 
 # function to compute new warping parameters
@@ -64,7 +62,6 @@ def affineLKtracker(image, tmp, rect, pprev):
 
     ctr = 0
 
-<<<<<<< HEAD
     while norm_p > 0.009:
 
         # get warped image
@@ -99,42 +96,8 @@ def affineLKtracker(image, tmp, rect, pprev):
         delta_p *= 100
         print(norm_p)
 
-=======
-    while norm_p > 0.03:
 
-        # get warped image
-        warp_image = cv2.warpAffine(image, warp_mat, (0, 0))
-        warp_image = warp_image[rect[0][1]:rect[1][1], rect[0][0]:rect[1][0]]
 
-        # difference of template and warped image
-        diff = cv2.subtract(tmp, warp_image).reshape(-1, 1)
-
-        # get sobel warped image
-        warp_sobelx = cv2.warpAffine(sobelx, warp_mat, (0, 0))
-        warp_sobely = cv2.warpAffine(sobely, warp_mat, (0, 0))
-        warp_sobelx = warp_sobelx[rect[0][1]:rect[1][1], rect[0][0]:rect[1][0]]
-        warp_sobely = warp_sobely[rect[0][1]:rect[1][1], rect[0][0]:rect[1][0]]
-
-        # for steepest descent calc
-        for i in range(len(y)):
-            delta_I = np.array([warp_sobelx[y[i][0]][x[i][0]], warp_sobely[y[i][0]][x[i][0]]])
-            jacobian = np.array([[y[i][0], 0, x[i][0], 0, 1, 0], [0, y[i][0], 0, x[i][0], 0, 1]])
-            steepest_descent_image[i] = delta_I @ jacobian
-
-        # hessian calculation
-        hessian = steepest_descent_image.T @ steepest_descent_image
-
-        # steepest descent parameters
-        sd_param = steepest_descent_image.T @ diff
-
-        # change in warping parameters
-        delta_p = np.linalg.inv(hessian) @ sd_param
-        # print(delta_p)
-        norm_p = np.linalg.norm(delta_p)
-        delta_p *= 100
-        print(norm_p)
-
->>>>>>> 6ad7e6537ac5896ef8634f0861291348c29a8e37
         # new parameters
         for i in range(len(pprev)):
             pprev[i] += delta_p[i]
@@ -165,25 +128,19 @@ def affineLKtracker(image, tmp, rect, pprev):
 if __name__ == '__main__':
 
     # get images from folder
-    filenames = glob.glob("Dataset/DragonBaby/DragonBaby/img/*.jpg")
+    filenames = glob.glob("Dataset/Car4/img/*.jpg")
     filenames.sort()
     images = [cv2.imread(img) for img in filenames]
 
     # bounding box coordinates in image
-<<<<<<< HEAD
     box = np.array([[70, 51], [177, 138]], dtype='int32')
 
-    # get template from folder
-    template = cv2.imread('Dataset/Car4/img/0001.jpg',0)
-=======
-    box = np.array([[160, 83], [216, 148]], dtype='int32')
+
 
     # get template from folder
-    template = cv2.imread('Dataset/DragonBaby/DragonBaby/img/0001.jpg', 0)
+    template = cv2.imread('Dataset/Car4/img/0001.jpg', 0)
     template = template[box[0][1]:box[1][1], box[0][0]:box[1][0]]
->>>>>>> 6ad7e6537ac5896ef8634f0861291348c29a8e37
 
-    template = template[box[0][1]:box[1][1], box[0][0]:box[1][0]]
     correctedtemp = gammaCorrection(template)
     # warping parameters
     param = np.zeros(6)
@@ -191,7 +148,6 @@ if __name__ == '__main__':
     for im in range(len(images)):
 
         img = copy.deepcopy(images[im])
-<<<<<<< HEAD
         corrected = gammaCorrection(img)
         # cv2.imshow("corrected", corrected)
         param, new_box = affineLKtracker(cv2.cvtColor(images[im], cv2.COLOR_BGR2GRAY)/255, correctedtemp/255, box, param)
@@ -202,13 +158,4 @@ if __name__ == '__main__':
         img2video(corrected,'out.avi')
         if cv2.waitKey(1) and 0xFF == ord('q'):
             break
-=======
-        param, new_box = affineLKtracker(cv2.cvtColor(images[im], cv2.COLOR_BGR2GRAY)/255, template/255, box, param)
 
-        # display final output
-        cv2.rectangle(img, new_box[0], new_box[1], (255, 0, 0), 2)
-        cv2.imshow('image', img)
-
-        if cv2.waitKey(1) and 0xFF == ord('q'):
-            break
->>>>>>> 6ad7e6537ac5896ef8634f0861291348c29a8e37

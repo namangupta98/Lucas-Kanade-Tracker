@@ -13,6 +13,21 @@ def gammaCorrection(images):
     res = cv2.LUT(images, lookUpTable)
     return res
 
+def EqualizeHistogram(frame):
+    new_img = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+    H,S,V = cv2.split(new_img)
+    clahe= cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+    new_img_H = clahe.apply(H)
+    new_img_S = clahe.apply(S)
+    new_img_V = clahe.apply(V)
+    new_img1 = cv2.merge((new_img_H,new_img_S,new_img_V))
+    return cv2.cvtColor(new_img1,cv2.COLOR_HSV2BGR)
+
+
+
+
+
+
 def img2video(images,videopath):
 
     imgArray = []
@@ -130,16 +145,19 @@ def getCar():
     filenames = glob.glob("Dataset/Car4/img/*.jpg")
     filenames.sort()
     photos = [cv2.imread(img) for img in filenames]
-
+    # for img in photos:
+    #     # phots = gammaCorrection(img)
+    #     phots = EqualizeHistogram(img)
+    #     cv2.waitKey()
     # bounding box coordinates in image
     box_coordinates = np.array([[70, 51], [177, 138]], dtype='int32')
 
     # get template from folder
-    templ = cv2.imread('Dataset/Car4/img/0001.jpg', 0)
+    templ = cv2.imread('Dataset/Car4/img/0001.jpg',0)
     templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
-
+    # templ = gammaCorrection(templ)
     # scaling and threshold factor
-    thresh = 0.009
+    thresh = 0.8
     scale = 100
 
     return photos, box_coordinates, templ, thresh, scale
@@ -181,7 +199,7 @@ def getBaby():
     # get template from folder
     templ = cv2.imread('Dataset/DragonBaby/DragonBaby/img/0001.jpg', 0)
     templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
-
+    templ = EqualizeHistogram(templ)
     # scaling and threshold factor
     thresh = 0.03
     scale = 80
@@ -220,12 +238,20 @@ if __name__ == '__main__':
 
     for frame in images:
 
-        imge = copy.deepcopy(images)
+        imge = copy.deepcopy(frame)
 
         # passing frames through gamma correction, comment this out if not using car dataset
+<<<<<<< HEAD
+        frame = EqualizeHistogram(frame)
+        gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # cv2.imshow("fr",frame)
+        # cv2.waitKey()
+        # getCar()
+=======
         # corrected = gammaCorrection(images[im])
         # gray_image = cv2.cvtColor(corrected, cv2.COLOR_BGR2GRAY)
 
+>>>>>>> b5e617f446a3ce5acd3212bbde46816c9ffe1d91
         param, new_box = affineLKtracker(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), template, box, param, thrshold, scaler)
 
         # display final output

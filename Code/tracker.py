@@ -13,6 +13,8 @@ def affineLKtracker(image, tmp, rect, pprev):
     norm_p = 1
 
     # steepest image calculation
+    # x = np.arange(0, tmp.shape[1], 1)
+    # y = np.arange(0, tmp.shape[0], 1)
     x, y = np.meshgrid(range(tmp.shape[1]), range(tmp.shape[0]))
     x = x.reshape(-1, 1)
     y = y.reshape(-1, 1)
@@ -22,7 +24,9 @@ def affineLKtracker(image, tmp, rect, pprev):
     sobelx = cv2.Sobel(image, cv2.CV_64F, 1, 0, ksize=5)
     sobely = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=5)
 
-    while norm_p > 0.1:
+    ctr = 0
+
+    while norm_p > 0.03:
 
         # get warped image
         warp_image = cv2.warpAffine(image, warp_mat, (0, 0))
@@ -38,31 +42,35 @@ def affineLKtracker(image, tmp, rect, pprev):
         warp_sobely = warp_sobely[rect[0][1]:rect[1][1], rect[0][0]:rect[1][0]]
 
         # for steepest descent calc
-        for i in range(len(x)):
+        for i in range(len(y)):
             delta_I = np.array([warp_sobelx[y[i][0]][x[i][0]], warp_sobely[y[i][0]][x[i][0]]])
-            jacobian = np.array([[x[i][0], 0, y[i][0], 0, 1, 0], [0, x[i][0], 0, y[i][0], 0, 1]])
-            steepest_descent_image[i] = np.dot(delta_I, jacobian).reshape(1, -1)
+            jacobian = np.array([[y[i][0], 0, x[i][0], 0, 1, 0], [0, y[i][0], 0, x[i][0], 0, 1]])
+            steepest_descent_image[i] = delta_I @ jacobian
 
         # hessian calculation
-        hessian = np.matmul(steepest_descent_image.T, steepest_descent_image)
+        hessian = steepest_descent_image.T @ steepest_descent_image
 
         # steepest descent parameters
-        sd_param = np.matmul(steepest_descent_image.T, diff)
+        sd_param = steepest_descent_image.T @ diff
 
         # change in warping parameters
-        delta_p = np.matmul(np.linalg.inv(hessian), sd_param)
+        delta_p = np.linalg.inv(hessian) @ sd_param
         # print(delta_p)
-
-        # delta_p *= 100
         norm_p = np.linalg.norm(delta_p)
-        # print(norm_p)
+        delta_p *= 100
+        print(norm_p)
 
         # new parameters
         for i in range(len(pprev)):
-            pprev[i] = delta_p[i] + pprev[i]
+            pprev[i] += delta_p[i]
 
         # update warp matrix
         warp_mat = np.array([[1 + pprev[0], pprev[2], pprev[4]], [pprev[1], 1 + pprev[3], pprev[5]]])
+
+        ctr += 1
+        print(ctr)
+        if ctr > 200:
+            break
 
     # display warped image
     cv2.imshow('warped image', warp_image)
@@ -87,7 +95,7 @@ if __name__ == '__main__':
     images = [cv2.imread(img) for img in filenames]
 
     # bounding box coordinates in image
-    box = np.array([[170, 103], [236, 148]], dtype='int32')
+    box = np.array([[160, 83], [216, 148]], dtype='int32')
 
     # get template from folder
     template = cv2.imread('Dataset/DragonBaby/DragonBaby/img/0001.jpg', 0)
@@ -99,7 +107,7 @@ if __name__ == '__main__':
     for im in range(len(images)):
 
         img = copy.deepcopy(images[im])
-        param, new_box = affineLKtracker(cv2.cvtColor(images[im], cv2.COLOR_BGR2GRAY), template, box, param)
+        param, new_box = affineLKtracker(cv2.cvtColor(images[im], cv2.COLOR_BGR2GRAY)/255, template/255, box, param)
 
         # display final output
         cv2.rectangle(img, new_box[0], new_box[1], (255, 0, 0), 2)

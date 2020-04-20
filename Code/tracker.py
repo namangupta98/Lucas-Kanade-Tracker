@@ -41,7 +41,7 @@ def mEstimator(delp, image, tmp):
 
 
 # function to compute new warping parameters
-def affineLKtracker(image, tmp, rect, pprev):
+def affineLKtracker(image, tmp, rect, pprev, threshold, scaling):
 
     # get warping parameters
     warp_mat = np.array([[1 + pprev[0], pprev[2], pprev[4]], [pprev[1], 1 + pprev[3], pprev[5]]])
@@ -62,7 +62,7 @@ def affineLKtracker(image, tmp, rect, pprev):
 
     ctr = 0
 
-    while norm_p > 0.009:
+    while norm_p > threshold:
 
         # get warped image
         warp_image = cv2.warpAffine(image, warp_mat, (0, 0))
@@ -90,13 +90,15 @@ def affineLKtracker(image, tmp, rect, pprev):
         sd_param = steepest_descent_image.T @ diff
 
         # change in warping parameters
+        # try:
         delta_p = np.linalg.inv(hessian) @ sd_param
+        # except:
+        #     pass
+
         # print(delta_p)
         norm_p = np.linalg.norm(delta_p)
-        delta_p *= 100
+        delta_p *= scaling
         print(norm_p)
-
-
 
         # new parameters
         for i in range(len(pprev)):
@@ -107,7 +109,7 @@ def affineLKtracker(image, tmp, rect, pprev):
 
         ctr += 1
         print(ctr)
-        if ctr > 200:
+        if ctr > 50:
             break
 
     # display warped image
@@ -124,38 +126,117 @@ def affineLKtracker(image, tmp, rect, pprev):
     return pprev, new_rect
 
 
-# main function
-if __name__ == '__main__':
+# function to call car dataset
+def getCar():
 
     # get images from folder
     filenames = glob.glob("Dataset/Car4/img/*.jpg")
     filenames.sort()
-    images = [cv2.imread(img) for img in filenames]
+    photos = [cv2.imread(img) for img in filenames]
 
     # bounding box coordinates in image
-    box = np.array([[70, 51], [177, 138]], dtype='int32')
-
-
+    box_coordinates = np.array([[70, 51], [177, 138]], dtype='int32')
 
     # get template from folder
-    template = cv2.imread('Dataset/Car4/img/0001.jpg', 0)
-    template = template[box[0][1]:box[1][1], box[0][0]:box[1][0]]
+    templ = cv2.imread('Dataset/Car4/img/0001.jpg', 0)
+    templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
 
-    correctedtemp = gammaCorrection(template)
-    # warping parameters
+    # scaling and threshold factor
+    thresh = 0.009
+    scale = 100
+
+    return photos, box_coordinates, templ, thresh, scale
+
+
+# function to call bolt dataset
+def getBolt():
+
+    # get images from folder
+    filenames = glob.glob("Dataset/Bolt2/img/*.jpg")
+    filenames.sort()
+    photos = [cv2.imread(img) for img in filenames]
+
+    # bounding box coordinates in image
+    box_coordinates = np.array([[266, 80], [307, 143]])
+
+    # get template from folder
+    templ = cv2.imread('Dataset/Bolt2/img/0001.jpg', 0)
+    templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
+
+    # scaling and threshold factor
+    thresh = 0.01
+    scale = 10
+
+    return photos, box_coordinates, templ, thresh, scale
+
+
+# function to call baby dataset
+def getBaby():
+
+    # get images from folder
+    filenames = glob.glob("Dataset/DragonBaby/DragonBaby/img/*.jpg")
+    filenames.sort()
+    photos = [cv2.imread(img) for img in filenames]
+
+    # bounding box coordinates in image
+    box_coordinates = np.array([[160, 83], [216, 148]], dtype='int32')
+
+    # get template from folder
+    templ = cv2.imread('Dataset/DragonBaby/DragonBaby/img/0001.jpg', 0)
+    templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
+
+    # scaling and threshold factor
+    thresh = 0.01
+    scale = 100
+
+    return photos, box_coordinates, templ, thresh, scale
+
+
+# main function
+if __name__ == '__main__':
+
+    # dataset selection
+    choice = int(input('Select dataset to track: (1) Car \t (2) Bolt \t (3) DragonBaby :-  '))
+
+    if choice == 1:
+        # call car dataset
+        images, box, template, thrshold, scaler = getCar()
+
+    elif choice == 2:
+        # cal bolt dataset
+        images, box, template, thrshold, scaler = getBolt()
+        cv2.imshow('template', template)
+
+    elif choice == 3:
+        # cal baby dataset
+        images, box, template, thrshold, scaler = getBaby()
+
+    else:
+        print('Invalid Input!!!')
+        exit()
+
+    # gamma correction
+    # correctedtemp = gammaCorrection(template)
+
+    # warpingparameters
     param = np.zeros(6)
 
-    for im in range(len(images)):
+    for frame in images:
 
-        img = copy.deepcopy(images[im])
-        corrected = gammaCorrection(img)
-        # cv2.imshow("corrected", corrected)
-        param, new_box = affineLKtracker(cv2.cvtColor(images[im], cv2.COLOR_BGR2GRAY)/255, correctedtemp/255, box, param)
+        imge = copy.deepcopy(images)
+
+        # passing frames through gamma correction, comment this out if not using car dataset
+        # corrected = gammaCorrection(images[im])
+        # gray_image = cv2.cvtColor(corrected, cv2.COLOR_BGR2GRAY)
+
+        param, new_box = affineLKtracker(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)/255, template/255, box, param, thrshold, scaler)
 
         # display final output
-        cv2.rectangle(corrected, new_box[0], new_box[1], (255, 0, 0), 2)
-        cv2.imshow('image', corrected)
-        img2video(corrected,'out.avi')
+        cv2.rectangle(frame, new_box[0], new_box[1], (255, 0, 0), 2)
+        cv2.imshow('image', frame)
+
+        # write video
+        # img2video(frame, 'out.avi')
+
         if cv2.waitKey(1) and 0xFF == ord('q'):
             break
-

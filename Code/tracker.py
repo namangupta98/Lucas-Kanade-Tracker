@@ -6,7 +6,7 @@ import copy
 # function for gamma correction of images
 def gammaCorrection(images):
 
-    gamma = 0.5
+    gamma = 1.0
     lookUpTable = np.empty((1, 256), np.uint8)
     for i in range(256):
         lookUpTable[0, i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
@@ -37,9 +37,6 @@ def mEstimator(delp, image, tmp):
     L = residual*np.sqrt(Lroot)
 
 
-
-
-
 # function to compute new warping parameters
 def affineLKtracker(image, tmp, rect, pprev, threshold, scaling):
 
@@ -62,7 +59,7 @@ def affineLKtracker(image, tmp, rect, pprev, threshold, scaling):
 
     ctr = 0
 
-    while norm_p > threshold:
+    while norm_p >= threshold:
 
         # get warped image
         warp_image = cv2.warpAffine(image, warp_mat, (0, 0))
@@ -109,15 +106,14 @@ def affineLKtracker(image, tmp, rect, pprev, threshold, scaling):
 
         ctr += 1
         print(ctr)
-        if ctr > 50:
+        if ctr > 2:
             break
 
     # display warped image
     cv2.imshow('warped image', warp_image)
 
-    newrow = [0, 0, 1]
-    matrix = np.vstack([warp_mat, newrow])
-
+    # newrow = [0, 0, 1]
+    matrix = np.vstack([warp_mat, [0, 0, 1]])
     pt1 = matrix @ np.array([rect[0][0], rect[0][1], 1]).reshape(1, -1).T
     pt2 = matrix @ np.array([rect[1][0], rect[1][1], 1]).reshape(1, -1).T
 
@@ -186,7 +182,7 @@ def getBaby():
     templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
 
     # scaling and threshold factor
-    thresh = 0.01
+    thresh = 0.03
     scale = 100
 
     return photos, box_coordinates, templ, thresh, scale
@@ -205,7 +201,7 @@ if __name__ == '__main__':
     elif choice == 2:
         # cal bolt dataset
         images, box, template, thrshold, scaler = getBolt()
-        cv2.imshow('template', template)
+        # cv2.imshow('template', template)
 
     elif choice == 3:
         # cal baby dataset
@@ -229,7 +225,7 @@ if __name__ == '__main__':
         # corrected = gammaCorrection(images[im])
         # gray_image = cv2.cvtColor(corrected, cv2.COLOR_BGR2GRAY)
 
-        param, new_box = affineLKtracker(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)/255, template/255, box, param, thrshold, scaler)
+        param, new_box = affineLKtracker(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), template, box, param, thrshold, scaler)
 
         # display final output
         cv2.rectangle(frame, new_box[0], new_box[1], (255, 0, 0), 2)

@@ -62,11 +62,12 @@ def affineLKtracker(image, tmp, rect, pprev, threshold, scaling):
     while norm_p >= threshold:
 
         # get warped image
-        warp_image = cv2.warpAffine(image, warp_mat, (0, 0))
+        warp_image = cv2.warpAffine(image, warp_mat, (0, 0), flags=cv2.INTER_CUBIC + cv2.WARP_INVERSE_MAP)
         warp_image = warp_image[rect[0][1]:rect[1][1], rect[0][0]:rect[1][0]]
 
         # difference of template and warped image
         diff = cv2.subtract(tmp, warp_image).reshape(-1, 1)
+        # diff = (tmp.astype(int) - warp_image.astype(int)).reshape(-1, 1)  # computing T(x)- I(w(x,p))
 
         # get sobel warped image
         warp_sobelx = cv2.warpAffine(sobelx, warp_mat, (0, 0))
@@ -106,7 +107,7 @@ def affineLKtracker(image, tmp, rect, pprev, threshold, scaling):
 
         ctr += 1
         print(ctr)
-        if ctr > 2:
+        if ctr > 20:
             break
 
     # display warped image
@@ -183,7 +184,7 @@ def getBaby():
 
     # scaling and threshold factor
     thresh = 0.03
-    scale = 100
+    scale = 80
 
     return photos, box_coordinates, templ, thresh, scale
 

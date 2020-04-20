@@ -13,6 +13,8 @@ def gammaCorrection(images):
     res = cv2.LUT(images, lookUpTable)
     return res
 
+
+# function for histogram equalization
 def EqualizeHistogram(frame):
     new_img = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
     H,S,V = cv2.split(new_img)
@@ -21,25 +23,7 @@ def EqualizeHistogram(frame):
     new_img_S = clahe.apply(S)
     new_img_V = clahe.apply(V)
     new_img1 = cv2.merge((new_img_H,new_img_S,new_img_V))
-    return cv2.cvtColor(new_img1,cv2.COLOR_HSV2BGR)
-
-
-
-
-
-
-def img2video(images,videopath):
-
-    imgArray = []
-    for img in images:
-        height, width = img.shape
-        size = (width, height)
-        imgArray.append(img)
-    out = cv2.VideoWriter(videopath, cv2.VideoWriter_fourcc(*'DIVX'), 30, size)
-    for i in range(len(imgArray)):
-        out.write(imgArray[i])
-    out.release()
-    return out
+    return cv2.cvtColor(new_img1, cv2.COLOR_HSV2BGR)
 
 
 # function for m estimator
@@ -77,7 +61,7 @@ def affineLKtracker(image, tmp, rect, pprev, threshold, scaling):
     while norm_p >= threshold:
 
         # get warped image
-        warp_image = cv2.warpAffine(image, warp_mat, (0, 0), flags=cv2.INTER_CUBIC + cv2.WARP_INVERSE_MAP)
+        warp_image = cv2.warpAffine(image, warp_mat, (0, 0))
         warp_image = warp_image[rect[0][1]:rect[1][1], rect[0][0]:rect[1][0]]
 
         # difference of template and warped image
@@ -154,13 +138,18 @@ def getCar():
 
     # get template from folder
     templ = cv2.imread('Dataset/Car4/img/0001.jpg',0)
+
+    # size of image
+    h, w = templ.shape
+    size = (w, h)
+
     templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
     # templ = gammaCorrection(templ)
     # scaling and threshold factor
-    thresh = 0.8
+    thresh = 0.009
     scale = 100
 
-    return photos, box_coordinates, templ, thresh, scale
+    return photos, box_coordinates, templ, thresh, scale, size
 
 
 # function to call bolt dataset
@@ -176,13 +165,18 @@ def getBolt():
 
     # get template from folder
     templ = cv2.imread('Dataset/Bolt2/img/0001.jpg', 0)
+
+    # size of image
+    h, w = templ.shape
+    size = (w, h)
+
     templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
 
     # scaling and threshold factor
     thresh = 0.01
     scale = 10
 
-    return photos, box_coordinates, templ, thresh, scale
+    return photos, box_coordinates, templ, thresh, scale, size
 
 
 # function to call baby dataset
@@ -198,13 +192,18 @@ def getBaby():
 
     # get template from folder
     templ = cv2.imread('Dataset/DragonBaby/DragonBaby/img/0001.jpg', 0)
+
+    # size of image
+    h, w = templ.shape
+    size = (w, h)
+
     templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
-    templ = EqualizeHistogram(templ)
+
     # scaling and threshold factor
     thresh = 0.03
-    scale = 80
+    scale = 100
 
-    return photos, box_coordinates, templ, thresh, scale
+    return photos, box_coordinates, templ, thresh, scale, size
 
 
 # main function
@@ -215,16 +214,16 @@ if __name__ == '__main__':
 
     if choice == 1:
         # call car dataset
-        images, box, template, thrshold, scaler = getCar()
+        images, box, template, thrshold, scaler, size = getCar()
 
     elif choice == 2:
         # cal bolt dataset
-        images, box, template, thrshold, scaler = getBolt()
+        images, box, template, thrshold, scaler, size = getBolt()
         # cv2.imshow('template', template)
 
     elif choice == 3:
         # cal baby dataset
-        images, box, template, thrshold, scaler = getBaby()
+        images, box, template, thrshold, scaler, size = getBaby()
 
     else:
         print('Invalid Input!!!')
@@ -236,22 +235,20 @@ if __name__ == '__main__':
     # warpingparameters
     param = np.zeros(6)
 
+    out = cv2.VideoWriter('out.avi', cv2.VideoWriter_fourcc(*'DIVX'), 15, size)
+
     for frame in images:
 
         imge = copy.deepcopy(frame)
 
         # passing frames through gamma correction, comment this out if not using car dataset
-<<<<<<< HEAD
-        frame = EqualizeHistogram(frame)
-        gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        # frame = EqualizeHistogram(frame)
+        # gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # cv2.imshow("fr",frame)
         # cv2.waitKey()
         # getCar()
-=======
         # corrected = gammaCorrection(images[im])
         # gray_image = cv2.cvtColor(corrected, cv2.COLOR_BGR2GRAY)
-
->>>>>>> b5e617f446a3ce5acd3212bbde46816c9ffe1d91
         param, new_box = affineLKtracker(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), template, box, param, thrshold, scaler)
 
         # display final output
@@ -259,7 +256,9 @@ if __name__ == '__main__':
         cv2.imshow('image', frame)
 
         # write video
-        # img2video(frame, 'out.avi')
+        out.write(frame)
 
         if cv2.waitKey(1) and 0xFF == ord('q'):
             break
+
+    out.release()

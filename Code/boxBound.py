@@ -10,7 +10,7 @@ def mouse_click(event, x, y, flag, param):
 
 if __name__ == '__main__':
     points = []
-    frame = cv2.imread("dataset/DragonBaby/DragonBaby/img/0001.jpg")
+    frame = cv2.imread("Dataset/DragonBaby/DragonBaby/img/0001.jpg")
     cv2.namedWindow("frame", 1)
     cv2.setMouseCallback("frame", mouse_click)
 

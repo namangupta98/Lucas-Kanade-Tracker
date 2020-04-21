@@ -4,7 +4,7 @@ This is a coursework project for ENPM673: Perception for Autonomous Robots in wh
 ## Authors
 - Naman Gupta
 - Pruthvi Sanghavi
-- Amoghavarsha Prassana
+- Amoghavarsha Prasanna
 
 ## Dependencies
 - Matplotlib ```pip install matplotlib```

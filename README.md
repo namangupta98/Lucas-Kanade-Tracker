@@ -2,9 +2,9 @@
 This is a coursework project for ENPM673: Perception for Autonomous Robots in which we implemented Lucas-Kanade template tracker.
 
 ## Authors
-- Naman Gupta
-- Pruthvi Sanghavi
-- Amoghavarsha Prasanna
+- [Naman Gupta](https://github.com/namangupta98/)
+- [Pruthvi Sanghavi](https://github.com/Pruthvi-Sanghavi)
+- [Amoghavarsha Prasanna](https://github.com/AmoghavarshaP)
 
 ## Dependencies
 - Numpy ```pip install numpy```

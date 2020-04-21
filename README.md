@@ -7,19 +7,19 @@ This is a coursework project for ENPM673: Perception for Autonomous Robots in wh
 - Amoghavarsha Prasanna
 
 ## Dependencies
-- Matplotlib ```pip install matplotlib```
 - Numpy ```pip install numpy```
 - Opencv ```pip install opencv-python```
 
 ## Run instructions
-- Open a terminal and type the following-
+- Navigate to your working directory and clone the repo.
 ```
-mkdir <workspace>
-cd <workspace>
-git clone https://github.com/namangupta98/Lucas-Kanade-Tracker.git
-cd Lucas-Kanade-Tracker
-cd code
-python3 ----
+git clone https://github.com/namangupta98/Lucas-Kanade-Tracker
+cd Lucas-Kanade-Tracker/Code
+
+```
+Type the following to run the code for Car Dataset.
+```
+python3 tracker.py
 ```
 
 ## Results

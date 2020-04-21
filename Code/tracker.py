@@ -246,8 +246,6 @@ if __name__ == '__main__':
 
     out = cv2.VideoWriter('out.avi', cv2.VideoWriter_fourcc(*'DIVX'), 10, size)
 
-    frame_ctr = 0
-
     for frame in images:
 
         imge = copy.deepcopy(frame)

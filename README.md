@@ -15,7 +15,6 @@ This is a coursework project for ENPM673: Perception for Autonomous Robots in wh
 ```
 git clone https://github.com/namangupta98/Lucas-Kanade-Tracker
 cd Lucas-Kanade-Tracker/Code
-
 ```
 Type the following to run the code for Car Dataset.
 ```

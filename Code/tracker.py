@@ -3,20 +3,27 @@ import glob
 import numpy as np
 import copy
 
-# function for gamma correction of images
-def gammaCorrection(images):
+# # function for gamma correction of images
+# def gammaCorrection(images):
+#
+#     gamma = 1.0
+#     lookUpTable = np.empty((1, 256), np.uint8)
+#     for i in range(256):
+#         lookUpTable[0, i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
+#     res = cv2.LUT(images, lookUpTable)
+#     return res
 
-    gamma = 1.0
-    lookUpTable = np.empty((1, 256), np.uint8)
-    for i in range(256):
-        lookUpTable[0, i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
-    res = cv2.LUT(images, lookUpTable)
-    return res
+
+# function for Huber Loss
+def huber(dp, delta=2):
+    L = 100000 * np.sum((delta**2) * (np.sqrt(1 + ((dp/delta) ** 2)) - 1))
+    print(L)
+    return L
 
 
 # function for histogram equalization
 def EqualizeHistogram(frame):
-    new_img = cv2.cvtColor(frame,cv2.COLOR_BGR2HSV)
+    new_img = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     H,S,V = cv2.split(new_img)
     clahe= cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
     new_img_H = clahe.apply(H)
@@ -26,14 +33,14 @@ def EqualizeHistogram(frame):
     return cv2.cvtColor(new_img1, cv2.COLOR_HSV2BGR)
 
 
-# function for m estimator
-def mEstimator(delp, image, tmp):
-    oldWarpmat = np.array([[1 + pprev[0], pprev[2], pprev[4]], [pprev[1], 1 + pprev[3], pprev[5]]])
-    newWarpmat = np.array([[1 + delp[0], delp[2], delp[4]], [delp[1], 1 + delp[3], delp[5]]])
-    newwarpImg = cv2.warpAffine(image, oldWarpmat, (0, 0))
-    newwarpTemp = cv2.warpAffine(tmp, newWarpmat, (0, 0))
-    Lroot = cv2.subtract(newwarpTemp - newwarpImg).reshape(-1,1)
-    L = residual*np.sqrt(Lroot)
+# # function for m estimator
+# def mEstimator(delp, image, tmp):
+#     oldWarpmat = np.array([[1 + pprev[0], pprev[2], pprev[4]], [pprev[1], 1 + pprev[3], pprev[5]]])
+#     newWarpmat = np.array([[1 + delp[0], delp[2], delp[4]], [delp[1], 1 + delp[3], delp[5]]])
+#     newwarpImg = cv2.warpAffine(image, oldWarpmat, (0, 0))
+#     newwarpTemp = cv2.warpAffine(tmp, newWarpmat, (0, 0))
+#     Lroot = cv2.subtract(newwarpTemp - newwarpImg).reshape(-1,1)
+#     L = residual*np.sqrt(Lroot)
 
 
 # function to compute new warping parameters
@@ -45,8 +52,6 @@ def affineLKtracker(image, tmp, rect, pprev, threshold, scaling):
     norm_p = 1
 
     # steepest image calculation
-    # x = np.arange(0, tmp.shape[1], 1)
-    # y = np.arange(0, tmp.shape[0], 1)
     x, y = np.meshgrid(range(tmp.shape[1]), range(tmp.shape[0]))
     x = x.reshape(-1, 1)
     y = y.reshape(-1, 1)
@@ -57,11 +62,12 @@ def affineLKtracker(image, tmp, rect, pprev, threshold, scaling):
     sobely = cv2.Sobel(image, cv2.CV_64F, 0, 1, ksize=5)
 
     ctr = 0
+    L = 1
 
     while norm_p >= threshold:
 
         # get warped image
-        warp_image = cv2.warpAffine(image, warp_mat, (0, 0))
+        warp_image = cv2.warpAffine(image, warp_mat, (0, 0), flags=cv2.INTER_CUBIC + cv2.WARP_INVERSE_MAP)
         warp_image = warp_image[rect[0][1]:rect[1][1], rect[0][0]:rect[1][0]]
 
         # difference of template and warped image
@@ -97,6 +103,9 @@ def affineLKtracker(image, tmp, rect, pprev, threshold, scaling):
         delta_p *= scaling
         print(norm_p)
 
+        # call for huber loss
+        # L = huber(delta_p)
+
         # new parameters
         for i in range(len(pprev)):
             pprev[i] += delta_p[i]
@@ -110,7 +119,7 @@ def affineLKtracker(image, tmp, rect, pprev, threshold, scaling):
             break
 
     # display warped image
-    cv2.imshow('warped image', warp_image)
+    # cv2.imshow('warped image', warp_image)
 
     # newrow = [0, 0, 1]
     matrix = np.vstack([warp_mat, [0, 0, 1]])
@@ -129,25 +138,26 @@ def getCar():
     filenames = glob.glob("Dataset/Car4/img/*.jpg")
     filenames.sort()
     photos = [cv2.imread(img) for img in filenames]
+
+    # image enhancement
     # for img in photos:
-    #     # phots = gammaCorrection(img)
     #     phots = EqualizeHistogram(img)
-    #     cv2.waitKey()
+
     # bounding box coordinates in image
     box_coordinates = np.array([[70, 51], [177, 138]], dtype='int32')
 
     # get template from folder
-    templ = cv2.imread('Dataset/Car4/img/0001.jpg',0)
+    templ = cv2.imread('Dataset/Car4/img/0001.jpg')
 
     # size of image
-    h, w = templ.shape
+    h, w, _ = templ.shape
     size = (w, h)
 
     templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
-    # templ = gammaCorrection(templ)
+
     # scaling and threshold factor
-    thresh = 0.009
-    scale = 100
+    thresh = 0.008
+    scale = 80
 
     return photos, box_coordinates, templ, thresh, scale, size
 
@@ -164,16 +174,16 @@ def getBolt():
     box_coordinates = np.array([[266, 80], [307, 143]])
 
     # get template from folder
-    templ = cv2.imread('Dataset/Bolt2/img/0001.jpg', 0)
+    templ = cv2.imread('Dataset/Bolt2/img/0001.jpg')
 
     # size of image
-    h, w = templ.shape
+    h, w, _ = templ.shape
     size = (w, h)
 
     templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
 
     # scaling and threshold factor
-    thresh = 0.01
+    thresh = 0.05
     scale = 10
 
     return photos, box_coordinates, templ, thresh, scale, size
@@ -191,17 +201,17 @@ def getBaby():
     box_coordinates = np.array([[160, 83], [216, 148]], dtype='int32')
 
     # get template from folder
-    templ = cv2.imread('Dataset/DragonBaby/DragonBaby/img/0001.jpg', 0)
+    templ = cv2.imread('Dataset/DragonBaby/DragonBaby/img/0001.jpg')
 
     # size of image
-    h, w = templ.shape
+    h, w, _ = templ.shape
     size = (w, h)
 
     templ = templ[box_coordinates[0][1]:box_coordinates[1][1], box_coordinates[0][0]:box_coordinates[1][0]]
 
     # scaling and threshold factor
     thresh = 0.03
-    scale = 100
+    scale = 80
 
     return photos, box_coordinates, templ, thresh, scale, size
 
@@ -219,7 +229,6 @@ if __name__ == '__main__':
     elif choice == 2:
         # cal bolt dataset
         images, box, template, thrshold, scaler, size = getBolt()
-        # cv2.imshow('template', template)
 
     elif choice == 3:
         # cal baby dataset
@@ -232,24 +241,24 @@ if __name__ == '__main__':
     # gamma correction
     # correctedtemp = gammaCorrection(template)
 
-    # warpingparameters
+    # warping parameters
     param = np.zeros(6)
 
-    out = cv2.VideoWriter('out.avi', cv2.VideoWriter_fourcc(*'DIVX'), 15, size)
+    out = cv2.VideoWriter('out.avi', cv2.VideoWriter_fourcc(*'DIVX'), 10, size)
+
+    frame_ctr = 0
 
     for frame in images:
 
         imge = copy.deepcopy(frame)
 
-        # passing frames through gamma correction, comment this out if not using car dataset
-        # frame = EqualizeHistogram(frame)
-        # gray_image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        # cv2.imshow("fr",frame)
-        # cv2.waitKey()
-        # getCar()
-        # corrected = gammaCorrection(images[im])
-        # gray_image = cv2.cvtColor(corrected, cv2.COLOR_BGR2GRAY)
-        param, new_box = affineLKtracker(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY), template, box, param, thrshold, scaler)
+        # in-case of image enhancement
+        frame = EqualizeHistogram(frame)
+        template = EqualizeHistogram(template)
+
+        # get updated parameters
+        param, new_box = affineLKtracker(cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY),
+                                         cv2.cvtColor(template, cv2.COLOR_BGR2GRAY), box, param, thrshold, scaler)
 
         # display final output
         cv2.rectangle(frame, new_box[0], new_box[1], (255, 0, 0), 2)

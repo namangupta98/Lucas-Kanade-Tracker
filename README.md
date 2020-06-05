@@ -1,5 +1,8 @@
-# Lucas-Kanade-Tracker
+# Lucas Kanade Tracker
 This is a coursework project for ENPM673: Perception for Autonomous Robots in which we implemented Lucas-Kanade template tracker.
+
+## Overview
+Implementation of Lucas-Kanade (LK) template tracker on three video sequences from the Visual Tracker benchmark database: featuring a car on the road, a baby fighting a dragon and Usain Bolt’s race. Also, the video's contrast is enhanced and robustness of the tracker is tested on car on the road video.
 
 ## Authors
 - [Naman Gupta](https://github.com/namangupta98/)
